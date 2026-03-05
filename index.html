@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hovercraft Timer (SciOly Div B 2025/2026)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- LOGIN VIEW -->
+    <section id="view-login" class="view">
+      <div class="card login-card">
+        <h1>Hovercraft Timer</h1>
+        <p class="muted">Science Olympiad • Hovercraft • Division B • 2025/2026</p>
+
+        <div class="form">
+          <label>
+            Username
+            <input id="login-username" type="text" autocomplete="username" />
+          </label>
+
+          <label>
+            Password
+            <input id="login-password" type="password" autocomplete="current-password" />
+          </label>
+
+          <button id="btn-login" class="btn primary">Log In</button>
+          <p id="login-error" class="error hidden"></p>
+
+          <details class="hint">
+            <summary>Setup hint</summary>
+            <p>
+              Edit <code>USERNAME</code> and <code>PASSWORD</code> in <code>app.js</code>.
+              This is a static GitHub Pages site, so login is a casual lock (not true security).
+            </p>
+          </details>
+        </div>
+      </div>
+      <footer class="footer muted">
+        Local-only app • Data stored in your browser • Export/Import supported
+      </footer>
+    </section>
+
+    <!-- HOME VIEW -->
+    <section id="view-home" class="view hidden">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="brand">
+            <div class="brand-title">Hovercraft Timer</div>
+            <div class="brand-sub muted">SciOly Div B • 2025/2026</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button id="btn-export-all" class="btn">Export All (JSON)</button>
+          <label class="btn file-btn">
+            Import (JSON)
+            <input id="file-import-all" type="file" accept=".json,application/json" />
+          </label>
+          <button id="btn-logout" class="btn danger">Log Out</button>
+        </div>
+      </header>
+
+      <main class="split">
+        <button id="btn-open-practice" class="split-btn left">
+          <div class="split-btn-title">PRACTICE</div>
+          <div class="split-btn-sub">Voltage runs • CSV • Graph</div>
+        </button>
+
+        <button id="btn-open-mock" class="split-btn right">
+          <div class="split-btn-title">MOCK COMPETE</div>
+          <div class="split-btn-sub">TT/BTT • 8 min • Scoresheet</div>
+        </button>
+      </main>
+
+      <footer class="footer muted">
+        Tip: Use Export/Import JSON to move data between computers.
+      </footer>
+    </section>
+
+    <!-- PRACTICE VIEW -->
+    <!-- ✅ UNCHANGED PRACTICE SECTION -->
+    <section id="view-practice" class="view hidden">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="btn-back-from-practice" class="btn">← Home</button>
+          <div class="brand compact">
+            <div class="brand-title">Practice</div>
+            <div class="brand-sub muted">3 runs per voltage • duplicates allowed</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button id="btn-practice-export-csv" class="btn">Export CSV</button>
+          <button id="btn-practice-export-jpeg" class="btn">Export Graph (JPEG)</button>
+          <button id="btn-practice-export-json" class="btn">Export Practice (JSON)</button>
+          <label class="btn file-btn">
+            Import Practice (JSON)
+            <input id="file-practice-import-json" type="file" accept=".json,application/json" />
+          </label>
+          <button id="btn-practice-clear" class="btn danger">Clear Practice Data</button>
+        </div>
+      </header>
+
+      <main class="content">
+
+        <section class="card">
+          <h2>Session Info</h2>
+          <div class="grid-3">
+            <label>
+              Date
+              <input id="practice-date" type="date" />
+            </label>
+            <label>
+              Testing session name
+              <input id="practice-session-name" type="text" placeholder="e.g., After-school test #2" />
+            </label>
+            <label>
+              Track levelness
+              <input id="practice-track-level" type="text" placeholder="e.g., 3° down slope" />
+            </label>
+          </div>
+          <div class="row gap">
+            <button id="btn-practice-save-session" class="btn primary">Save Session Info</button>
+            <span id="practice-session-saved" class="muted"></span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Stopwatch</h2>
+
+          <div class="stopwatch">
+            <div class="stopwatch-left">
+              <label class="inline">
+                Voltage (V) <span class="req">*</span>
+                <input id="practice-voltage" type="number" step="0.01" min="0" placeholder="Enter voltage first" />
+              </label>
+              <div class="muted small">
+                You can’t start timing until voltage is entered.
+                Each voltage row captures 3 runs, then auto-averages.
+              </div>
+            </div>
+
+            <div class="stopwatch-right">
+              <div id="practice-time-display" class="time-display">00:00.000</div>
+              <div class="row gap">
+                <button id="btn-practice-start" class="btn primary" disabled>Start</button>
+                <button id="btn-practice-stop" class="btn" disabled>Stop</button>
+                <button id="btn-practice-reset" class="btn">Reset</button>
+              </div>
+              <div id="practice-run-hint" class="muted small"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Runs</h2>
+          <div class="table-wrap">
+            <table id="practice-table">
+              <thead>
+                <tr>
+                  <th>Voltage</th>
+                  <th>Run 1 (s)</th>
+                  <th>Run 2 (s)</th>
+                  <th>Run 3 (s)</th>
+                  <th>Average (s)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="practice-tbody">
+                <!-- rows injected -->
+              </tbody>
+            </table>
+          </div>
+          <div class="muted small">
+            Click a cell to edit. Rows are sorted by voltage (high → low). Duplicate voltages are allowed.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Graph</h2>
+          <canvas id="practice-chart" height="120"></canvas>
+          <div class="row space-between">
+            <div>
+              <div id="practice-eq" class="mono"></div>
+              <div id="practice-r2" class="muted small"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </section>
+
+    <!-- MOCK COMPETE VIEW -->
+    <section id="view-mock" class="view hidden">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="btn-back-from-mock" class="btn">← Home</button>
+          <div class="brand compact">
+            <div class="brand-title">Mock Compete</div>
+            <div class="brand-sub muted">Random TT/BTT • 8 min period • Scoresheet</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button id="btn-mock-export-json" class="btn">Export Mock (JSON)</button>
+          <label class="btn file-btn">
+            Import Mock (JSON)
+            <input id="file-mock-import-json" type="file" accept=".json,application/json" />
+          </label>
+          <button id="btn-mock-clear" class="btn danger">Clear Mock Data</button>
+        </div>
+      </header>
+
+      <main class="content">
+
+        <section class="card">
+          <h2>Setup</h2>
+
+          <div class="grid-3">
+            <label>
+              Hovercraft version #
+              <input id="mock-version" type="text" placeholder="e.g., V3.2" />
+            </label>
+            <label>
+              Competitors (names)
+              <input id="mock-competitors" type="text" placeholder="e.g., Alex, Jamie" />
+            </label>
+            <label>
+              Team / School (optional)
+              <input id="mock-team" type="text" placeholder="e.g., Lincoln MS" />
+            </label>
+          </div>
+
+          <div class="row gap wrap">
+            <button id="btn-rule-regional" class="btn">Regional Rules<br><span class="muted small">10–20s • 2s intervals</span></button>
+            <button id="btn-rule-state" class="btn">State Rules<br><span class="muted small">10–20s • 1s intervals</span></button>
+            <button id="btn-rule-national" class="btn">National Rules<br><span class="muted small">10–20s • 0.5s intervals</span></button>
+
+            <div class="pill" id="mock-rules-pill">Rules: <span id="mock-rules-name" class="mono">Not selected</span></div>
+          </div>
+
+          <div class="row gap wrap">
+            <button id="btn-mock-randomize-tt" class="btn primary" disabled>Randomize TT/BTT</button>
+            <div class="pill">
+              TT: <span id="mock-tt" class="mono">—</span>
+            </div>
+            <div class="pill">
+              BTT: <span id="mock-btt" class="mono">—</span>
+            </div>
+
+            <!-- ✅ NEW: BONUS MODE BUTTON -->
+            <button id="btn-mock-bonus-mode" class="btn success" disabled>BONUS MODE: OFF</button>
+          </div>
+
+          <div class="muted small">
+            TT and BTT are randomly selected based on the interval set. BTT will always differ from TT.
+            Bonus Mode becomes available only after the first COMPLETE run is eligible.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Construction Check (before starting 8:00)</h2>
+
+          <div class="grid-3">
+            <label class="check">
+              <input id="mock-check-complete" type="checkbox" />
+              Construction check complete
+            </label>
+            <label>
+              # Construction violations
+              <input id="mock-construction-violations" type="number" min="0" step="1" value="0" />
+            </label>
+            <label class="check">
+              <input id="mock-missed-impound" type="checkbox" />
+              Missed impound (×0.7)
+            </label>
+          </div>
+
+          <div class="row gap">
+            <button id="btn-mock-start-period" class="btn primary" disabled>Start 8:00 Period</button>
+            <button id="btn-mock-reset-period" class="btn danger" disabled>Reset Period</button>
+            <span id="mock-start-hint" class="muted small"></span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>8:00 Period + Runs</h2>
+
+          <div class="mock-timers">
+            <div class="timer-card">
+              <div class="muted small">Testing Period</div>
+              <div id="mock-period-display" class="time-display big">08:00.0</div>
+              <div class="row gap">
+                <button id="btn-mock-pause-period" class="btn" disabled>Pause</button>
+                <button id="btn-mock-resume-period" class="btn" disabled>Resume</button>
+              </div>
+              <div class="muted small">
+                A run can count if it was started before time hit 0.
+              </div>
+            </div>
+
+            <div class="timer-card">
+              <div class="muted small">Run Stopwatch</div>
+              <div id="mock-run-display" class="time-display big">00:00.000</div>
+              <div class="row gap wrap">
+                <button id="btn-mock-start-run" class="btn primary" disabled>Start Run</button>
+                <button id="btn-mock-stop-run" class="btn" disabled>Stop Run</button>
+                <button id="btn-mock-reset-run" class="btn" disabled>Reset Run</button>
+              </div>
+
+              <div class="row gap wrap">
+                <div class="pill">Run #: <span id="mock-run-number" class="mono">0</span></div>
+                <div class="pill">Complete runs: <span id="mock-complete-count" class="mono">0</span></div>
+                <div class="pill">Incomplete runs: <span id="mock-incomplete-count" class="mono">0</span></div>
+              </div>
+
+              <div id="mock-run-hint" class="muted small"></div>
+            </div>
+          </div>
+
+          <hr />
+
+          <div id="mock-run-form" class="hidden">
+            <h3>Record Run Outcome</h3>
+
+            <div class="grid-3">
+              <label class="check">
+                <input id="mock-did-not-cross-start" type="checkbox" />
+                Dowel did not cross start line within 3s (does NOT count as a run)
+              </label>
+
+              <label class="check">
+                <input id="mock-touched-after-start" type="checkbox" />
+                Touched vehicle after start (DS=0, TS=0)
+              </label>
+
+              <label class="check">
+                <input id="mock-part-fell-off" type="checkbox" />
+                Part fell off (counts as competition violation)
+              </label>
+            </div>
+
+            <div class="grid-3">
+              <label>
+                Mark run as complete?
+                <select id="mock-complete-select">
+                  <option value="complete">Complete</option>
+                  <option value="incomplete">Incomplete</option>
+                </select>
+              </label>
+
+              <label>
+                Distance from finish line (cm) <span class="muted small">(only for incomplete)</span>
+                <input id="mock-distance-cm" type="number" min="0" step="0.1" placeholder="e.g., 25" disabled />
+              </label>
+
+              <label>
+                # Competition violations (this run)
+                <input id="mock-competition-violations" type="number" min="0" step="1" value="0" />
+              </label>
+            </div>
+
+            <div class="row gap wrap">
+              <label class="check">
+                <input id="mock-used-ramp" type="checkbox" />
+                Ramp used (DS ×0.5)
+              </label>
+
+              <!-- (kept for internal state visibility; Bonus Mode button controls it) -->
+              <div class="pill">
+                Final run type:
+                <select id="mock-final-run-type" disabled>
+                  <option value="tt">TT</option>
+                  <option value="bonus">Bonus</option>
+                </select>
+              </div>
+
+              <div class="pill">
+                Bonus eligible:
+                <span id="mock-bonus-eligible" class="mono">—</span>
+              </div>
+            </div>
+
+            <div class="row gap wrap">
+              <button id="btn-mock-save-run" class="btn primary">Save Run</button>
+              <button id="btn-mock-cancel-run" class="btn">Cancel</button>
+              <span id="mock-save-hint" class="muted small"></span>
+            </div>
+
+          </div>
+
+        </section>
+
+        <section class="card">
+          <h2>Runs Log</h2>
+          <div class="table-wrap">
+            <table id="mock-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Type</th>
+                  <th>Runtime (s)</th>
+                  <th>Status</th>
+                  <th>Dist cm</th>
+                  <th>Ramp</th>
+                  <th>Touch</th>
+                  <th>Comp viol</th>
+                  <th>DS</th>
+                  <th>TS</th>
+                  <th>RS</th>
+                  <th>BS</th>
+                </tr>
+              </thead>
+              <tbody id="mock-tbody"></tbody>
+            </table>
+          </div>
+          <div class="muted small">
+            Note: Bonus run (if used) must not use a ramp.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Score</h2>
+          <div class="grid-3">
+            <div class="pill big">
+              Best RS: <span id="mock-best-rs" class="mono">—</span>
+            </div>
+            <div class="pill big">
+              Bonus: <span id="mock-best-bs" class="mono">—</span>
+            </div>
+            <div class="pill big primary">
+              Final Score: <span id="mock-final-score" class="mono">—</span>
+            </div>
+          </div>
+
+          <div class="row gap wrap">
+            <button id="btn-mock-generate-scoresheet" class="btn primary">Generate Scoresheet</button>
+            <button id="btn-mock-print-scoresheet" class="btn" disabled>Print</button>
+          </div>
+        </section>
+
+        <section id="mock-scoresheet" class="card hidden">
+          <h2>Scoresheet</h2>
+          <div id="mock-scoresheet-content" class="scoresheet"></div>
+        </section>
+
+      </main>
+    </section>
+
+  </div>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
